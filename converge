@@ -1,0 +1,39 @@
+import pandas as pd
+import argparse
+
+def export_second_column(input_file, output_file):
+    df = pd.read_csv(input_file, sep='\t', header=None)
+    second_column = df.iloc[:, 1]
+    second_column.to_csv(output_file, index=False, header=False)
+
+def search_and_paste_values(excel_path, search_values_file, output_file):
+    df = pd.read_excel(excel_path)
+    matched_values = pd.read_csv(search_values_file, header=None)
+    matched_values.columns = ['Matched_Value']
+
+    for col_name in df.columns:
+        for index, value in df[col_name].items():
+            if pd.isna(value):
+                continue
+            if value in matched_values['Matched_Value'].values:
+                matched_values.loc[matched_values['Matched_Value'] == value, 'Column1'] = df.iloc[index, 0]
+                matched_values.loc[matched_values['Matched_Value'] == value, 'Column2'] = df.iloc[index, 1]
+
+    matched_values.to_csv(output_file, sep='\t', index=False, header=False)
+
+def main():
+    # Argument parser for input/output files
+    parser = argparse.ArgumentParser(description="Process files and search values in gene_presence_absence.xlsx")
+    parser.add_argument('-i', '--input', required=True, help="Path to the gene list")
+    parser.add_argument('-o', '--output', required=True, help="Path to the output file")
+    parser.add_argument('-x', '--excel', default="gene_presence_absence.xlsx", help="Path to the gene_presence_absence.xlsx file (default: gene_presence_absence.xlsx)")
+
+    args = parser.parse_args()
+
+    export_second_column(args.input, args.output)
+
+    search_values = pd.read_csv(args.output, header=None)[0].tolist()
+    search_and_paste_values(args.excel, args.output, args.output)
+
+if __name__ == "__main__":
+    main()
